@@ -36,16 +36,13 @@ func (p *Product) Find(ctx context.Context, productID int) (*model.Product, erro
 	prod := model.Product{}
 
 	err := p.DB.QueryRowContext(ctx, query, productID).Scan(&prod.ID, &prod.Name, &prod.Path, &prod.Price, &prod.Stock, &prod.BrandID)
-	if err != nil {
-		return nil, err
-	}
 
 	if err == sql.ErrNoRows {
-		return nil, err
+		return nil, fmt.Errorf("data not found")
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("error querying find product uuid %s", err.Error())
+		return nil, err
 	}
 	return &prod, nil
 }
@@ -106,7 +103,7 @@ func (p *Product) Update(ctx context.Context, product model.Product, brandId int
 					path = ?, 
 					price = ?, 
 					stock = ?
-				VALUES
+				WHERE
 					product_id = ?
 			`
 

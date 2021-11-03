@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -70,7 +71,7 @@ func (h *Handler) GetProduct(c echo.Context) error {
 	res, err := h.ProductUsecase.GetProduct(ctx, productID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, responseError{
-			Message: "internal error",
+			Message: fmt.Sprint(err),
 		})
 
 		return echo.ErrInternalServerError
@@ -146,7 +147,7 @@ func (h *Handler) SendProduct(c echo.Context) error {
 func (h *Handler) UpdateProduct(c echo.Context) error {
 	ctx := c.Request().Context()
 	dataReq := model.Product{}
-	productIDParam := c.Param("id")
+	productIDParam := c.QueryParam("id")
 
 	userInfo := c.Get("user").(*model.Token)
 
