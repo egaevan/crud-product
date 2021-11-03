@@ -2,7 +2,9 @@ package rest
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 
 	"crud-product/model"
@@ -21,6 +23,7 @@ type responseError struct {
 
 const (
 	isAdmin int = 1
+	imageLoc = "upload"
 )
 
 func NewHandler(e *echo.Echo, productUsecase usecase.ProductUsecase, userUsecase usecase.UserUsecase) {
@@ -40,6 +43,16 @@ func NewHandler(e *echo.Echo, productUsecase usecase.ProductUsecase, userUsecase
 	e.POST("/login", handler.Login)
 	e.POST("/register", handler.Register)
 }
+
+// GetProduct godoc
+// @Summary Get Product.
+// @Description get product.
+// @Tags Product
+// @Accept */*
+// @Produce json
+// @Param id path string true "Product ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /product [get]
 
 func (h *Handler) GetProduct(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -126,6 +139,26 @@ func (h *Handler) SendProduct(c echo.Context) error {
 		return echo.ErrUnauthorized
 	}
 
+	dataReq.UrlImage, _ = c.FormFile("fileImage")
+
+	uploadedFile, err := dataReq.UrlImage.Open()
+	if err != nil {
+		return err
+	}
+	defer uploadedFile.Close()
+
+	tempFile, err := os.CreateTemp(imageLoc, fmt.Sprintf("%v", dataReq.ID))
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer tempFile.Close()
+
+	dataReq.Path = tempFile.Name()
+
+	if _, err = io.Copy(tempFile, uploadedFile); err != nil {
+		return err
+	}
+
 	if err := c.Bind(&dataReq); err != nil {
 		c.JSON(http.StatusBadRequest, responseError{
 			Message: "invalid data request",
@@ -133,7 +166,7 @@ func (h *Handler) SendProduct(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	res, err := h.ProductUsecase.SendProduct(ctx, dataReq)
+	_, err = h.ProductUsecase.SendProduct(ctx, dataReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, responseError{
 			Message: "internal error",
@@ -141,7 +174,9 @@ func (h *Handler) SendProduct(c echo.Context) error {
 
 		return echo.ErrInternalServerError
 	}
-	return c.JSON(http.StatusCreated, res)
+	return c.JSON(http.StatusCreated, responseError{
+		Message: "success create",
+	})
 }
 
 func (h *Handler) UpdateProduct(c echo.Context) error {
@@ -153,6 +188,26 @@ func (h *Handler) UpdateProduct(c echo.Context) error {
 
 	if userInfo.Role != isAdmin {
 		return echo.ErrUnauthorized
+	}
+
+	dataReq.UrlImage, _ = c.FormFile("fileImage")
+
+	uploadedFile, err := dataReq.UrlImage.Open()
+	if err != nil {
+		return err
+	}
+	defer uploadedFile.Close()
+
+	tempFile, err := os.CreateTemp(imageLoc, fmt.Sprintf("%v", dataReq.ID))
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer tempFile.Close()
+
+	dataReq.Path = tempFile.Name()
+
+	if _, err = io.Copy(tempFile, uploadedFile); err != nil {
+		return err
 	}
 
 	if productIDParam == "" {
@@ -179,21 +234,23 @@ func (h *Handler) UpdateProduct(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	res, err := h.ProductUsecase.UpdateProduct(ctx, dataReq, productID)
+	_, err = h.ProductUsecase.UpdateProduct(ctx, dataReq, productID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, responseError{
 			Message: "internal error",
 		})
-
+		fmt.Println(err)
 		return echo.ErrInternalServerError
 	}
 
-	return c.JSON(http.StatusOK, res)
+	return c.JSON(http.StatusOK, responseError{
+		Message: "update has been successful",
+	})
 }
 
 func (h *Handler) DeleteProduct(c echo.Context) error {
 	ctx := c.Request().Context()
-	productIDParam := c.Param("productID")
+	productIDParam := c.QueryParam("id")
 
 	userInfo := c.Get("user").(*model.Token)
 

@@ -94,7 +94,7 @@ func (p *Product) Fetch(ctx context.Context, brandId int) (result []model.Produc
 	return result, nil
 }
 
-func (p *Product) Update(ctx context.Context, product model.Product, brandId int) error {
+func (p *Product) Update(ctx context.Context, product model.Product, productId int) error {
 		query := `
 				UPDATE 
 				    product
@@ -104,11 +104,10 @@ func (p *Product) Update(ctx context.Context, product model.Product, brandId int
 					price = ?, 
 					stock = ?
 				WHERE
-					product_id = ?
-			`
+					product_id = ?`
 
 	_, err := p.DB.ExecContext(ctx, query,
-		product.Name, product.Path, product.Price, product.Stock, product.BrandID)
+		product.Name, product.Path, product.Price, product.Stock, productId)
 
 	if err != nil {
 		return err
