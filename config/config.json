@@ -1,0 +1,10 @@
+{
+  "database": {
+    "host": "sql6.freemysqlhosting.net",
+    "port": 3306,
+    "name": "sql6448356",
+    "user": "sql6448356",
+    "password": "pMNtVLWGm7",
+    "database" : "sql6448356"
+  }
+}
